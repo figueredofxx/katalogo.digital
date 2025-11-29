@@ -1,41 +1,36 @@
 
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Input, Button, Card, showToast } from '../components/ui/Components';
-import { supabase } from '../lib/supabase';
+import { pb } from '../lib/pocketbase';
 import { Lock } from 'lucide-react';
 
 const ResetPassword: React.FC = () => {
   const navigate = useNavigate();
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  // O Supabase coloca o token na URL (hash). O cliente JS detecta a sessão automaticamente.
-  // Mas é bom verificar se temos sessão.
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const token = searchParams.get('token') || '';
   
-  useEffect(() => {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-          if (!session) {
-              // Se não tiver sessão (token expirado ou inválido), volta pro login
-              showToast('Link inválido ou expirado.', 'error');
-              navigate('/login');
-          }
-      });
-  }, [navigate]);
+  const [password, setPassword] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (password !== passwordConfirm) {
+        showToast('As senhas não coincidem', 'error');
+        return;
+    }
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.updateUser({ password: password });
+      // PB confirmPasswordReset
+      await pb.collection('users').confirmPasswordReset(token, password, passwordConfirm);
       
-      if (error) throw error;
-
       showToast('Senha atualizada com sucesso!', 'success');
-      navigate('/admin/dashboard');
+      navigate('/login');
     } catch (error: any) {
-      showToast(error.message || 'Erro ao atualizar senha.', 'error');
+      showToast('Erro ao atualizar senha. O link pode ter expirado.', 'error');
     } finally {
       setLoading(false);
     }
@@ -46,23 +41,30 @@ const ResetPassword: React.FC = () => {
       <Card className="w-full max-w-md p-8 shadow-lg">
         <div className="text-center mb-8">
             <h1 className="text-2xl font-bold text-gray-900">Nova Senha</h1>
-            <p className="text-gray-500 text-sm mt-2">Crie uma nova senha segura para sua conta.</p>
         </div>
 
         <form onSubmit={handleUpdate} className="space-y-6">
             <Input 
                 label="Nova Senha" 
                 type="password" 
-                placeholder="••••••••" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 icon={<Lock className="text-gray-400" size={18} />}
                 required
-                minLength={6}
+                minLength={8}
+            />
+            <Input 
+                label="Confirmar Senha" 
+                type="password" 
+                value={passwordConfirm}
+                onChange={(e) => setPasswordConfirm(e.target.value)}
+                icon={<Lock className="text-gray-400" size={18} />}
+                required
+                minLength={8}
             />
 
             <Button type="submit" size="full" isLoading={loading} className="bg-[#4B0082]">
-                Atualizar Senha
+                Salvar Nova Senha
             </Button>
         </form>
       </Card>

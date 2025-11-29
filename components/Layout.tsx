@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Package, Palette, LogOut, Settings, Store, BarChart3, ShoppingBag, Bell, Trash2, LifeBuoy, Tags, Grid, Clock, Lock } from 'lucide-react';
-import { ToastContainer, Drawer, Logo, SupabaseWarning, Button } from './ui/Components';
+import { Drawer, Logo, SupabaseWarning, Button, showToast } from './ui/Components';
 import { useNotifications } from '../contexts/NotificationContext';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -14,11 +14,16 @@ const AdminLayout: React.FC<LayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { notifications, unreadCount, markAsRead, markAllAsRead, clearAll } = useNotifications();
-  const { tenant } = useAuth();
+  const { tenant, signOut } = useAuth();
   const [isNotifOpen, setIsNotifOpen] = useState(false);
 
   const handleLogout = () => {
-    navigate('/login');
+    showToast('Desconectando...', 'info');
+    // Small delay to allow user to see feedback
+    setTimeout(() => {
+        signOut();
+        navigate('/login');
+    }, 500);
   };
 
   // --- TRIAL LOGIC ---
@@ -95,11 +100,7 @@ const AdminLayout: React.FC<LayoutProps> = ({ children }) => {
               <NavLink
                 key={item.path}
                 to={item.path}
-                className={({ isActive }) => `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                  isActive
-                    ? 'bg-gray-100 text-gray-900'
-                    : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
-                }`}
+                className={({ isActive }) => `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all hover:text-gray-900 hover:bg-gray-50 ${isActive ? 'bg-gray-100 text-gray-900' : 'text-gray-500'}`}
               >
                 <item.icon size={18} />
                 {item.label}
@@ -141,16 +142,10 @@ const AdminLayout: React.FC<LayoutProps> = ({ children }) => {
                 <NavLink
                     key={item.path}
                     to={item.path}
-                    className={({ isActive }) => `flex flex-col items-center justify-center p-2 rounded-xl transition-all min-w-[60px] ${
-                        isActive ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'
-                    }`}
+                    className={({ isActive }) => `flex flex-col items-center justify-center p-2 rounded-xl transition-all min-w-[60px] hover:text-gray-600 ${isActive ? 'text-gray-900' : 'text-gray-400'}`}
                 >
-                    {({ isActive }) => (
-                        <>
-                            <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
-                            <span className="text-[9px] font-medium mt-1 whitespace-nowrap">{item.label}</span>
-                        </>
-                    )}
+                    <item.icon size={20} strokeWidth={2} />
+                    <span className="text-[9px] font-medium mt-1 whitespace-nowrap">{item.label}</span>
                 </NavLink>
               );
             })}
@@ -232,8 +227,6 @@ const AdminLayout: React.FC<LayoutProps> = ({ children }) => {
               </div>
           </div>
       </Drawer>
-
-      <ToastContainer />
     </div>
   );
 };

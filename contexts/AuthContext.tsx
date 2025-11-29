@@ -1,101 +1,96 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { pb } from '../lib/pocketbase';
 import { Tenant } from '../types';
 
 interface AuthContextType {
   user: any | null;
   tenant: Tenant | null;
   loading: boolean;
-  signOut: () => Promise<void>;
+  signOut: () => void;
   refreshTenant: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<any | null>(null);
+  const [user, setUser] = useState<any | null>(pb.authStore.model);
   const [tenant, setTenant] = useState<Tenant | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchTenant = async (userId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('tenants')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
+      // Busca o tenant onde 'owner' é igual ao ID do usuário
+      const records = await pb.collection('tenants').getList(1, 1, {
+          filter: `owner = "${userId}"`,
+          expand: 'owner'
+      });
 
-      if (data) {
-         // Map database snake_case to TypeScript camelCase
+      if (records.items.length > 0) {
+         const data = records.items[0];
+         
          const mappedTenant: Tenant = {
              id: data.id,
              name: data.name,
              slug: data.slug,
              primaryColor: data.primary_color || '#4B0082',
              whatsappNumber: data.whatsapp_number,
-             bannerUrl: data.banner_url,
-             logoUrl: data.logo_url,
+             bannerUrl: data.banner ? pb.files.getUrl(data, data.banner) : '',
+             logoUrl: data.logo ? pb.files.getUrl(data, data.logo) : '',
              description: data.description,
              address: data.address,
              plan: data.plan,
-             customDomain: data.custom_domain,
-             creditCardInterestRate: data.credit_card_interest_rate,
-             paymentMethods: data.payment_methods_json,
-             deliveryConfig: data.delivery_config,
-             orderControlMode: data.order_control_mode,
-             instagram: data.instagram,
+             // Mapeia campos JSON se existirem
+             paymentMethods: data.config_json?.paymentMethods,
+             deliveryConfig: data.config_json?.deliveryConfig,
              openingHours: data.opening_hours,
-             subscriptionStatus: data.subscription_status,
-             trialEndsAt: data.trial_ends_at, // Novo Campo Mapeado
-             ownerEmail: user?.email
+             subscriptionStatus: data.subscription_status || 'trial',
+             ownerEmail: user?.email,
+             isSuperAdmin: user?.is_super_admin
          };
          setTenant(mappedTenant);
       } else {
          setTenant(null); 
       }
     } catch (err) {
-      console.error("Erro ao buscar tenant:", err);
+      console.error("Erro ao buscar tenant (PB):", err);
       setTenant(null);
     }
   };
 
   const refreshTenant = async () => {
-    if (user) await fetchTenant(user.id);
+    if (pb.authStore.isValid && pb.authStore.model) {
+        await fetchTenant(pb.authStore.model.id);
+    }
   };
 
   useEffect(() => {
-    const checkSession = async () => {
-        try {
-            const { data: { session } } = await supabase.auth.getSession();
-            setUser(session?.user ?? null);
-            if (session?.user) {
-                await fetchTenant(session.user.id);
-            }
-        } catch (error) {
-            console.error("Erro auth:", error);
-        } finally {
-            setLoading(false);
+    // Check initial session
+    if (pb.authStore.isValid && pb.authStore.model) {
+        setUser(pb.authStore.model);
+        fetchTenant(pb.authStore.model.id).finally(() => setLoading(false));
+    } else {
+        setUser(null);
+        setLoading(false);
+    }
+
+    // Listen to auth changes
+    const removeListener = pb.authStore.onChange((token, model) => {
+        setUser(model);
+        if (model) {
+            fetchTenant(model.id);
+        } else {
+            setTenant(null);
         }
-    };
-
-    checkSession();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        await fetchTenant(session.user.id);
-      } else {
-        setTenant(null);
-      }
-      setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+        removeListener();
+    };
   }, []);
 
-  const signOut = async () => {
-    await supabase.auth.signOut();
+  const signOut = () => {
+    pb.authStore.clear();
     setTenant(null);
     setUser(null);
   };

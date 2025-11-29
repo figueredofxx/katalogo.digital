@@ -5,10 +5,12 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useAdmin } from '../../hooks/useAdmin';
 import { User, Shield, CreditCard, LogOut, DollarSign, Check, Lock, Wallet, LayoutTemplate, Truck, Map, MapPin, Navigation, Plus, Trash2, Globe, Server, HelpCircle, CheckCircle } from 'lucide-react';
 import { PaymentMethods, DeliveryConfig, DeliveryRegion } from '../../types';
+import { useNavigate } from 'react-router-dom';
 
 const Settings: React.FC = () => {
   const { tenant, signOut, refreshTenant } = useAuth();
   const { updateTenantSettings } = useAdmin();
+  const navigate = useNavigate();
   const [interestRate, setInterestRate] = useState(0);
   const [orderControlMode, setOrderControlMode] = useState<'kanban' | 'list' | 'kitchen'>('kanban');
   const [customDomain, setCustomDomain] = useState('');
@@ -65,6 +67,14 @@ const Settings: React.FC = () => {
     } else {
         showToast('Erro ao salvar', 'error');
     }
+  };
+
+  const handleLogout = () => {
+      showToast('Desconectando...', 'info');
+      setTimeout(() => {
+          signOut();
+          navigate('/login');
+      }, 500);
   };
 
   const togglePaymentMethod = (key: keyof PaymentMethods) => {
@@ -570,7 +580,7 @@ const Settings: React.FC = () => {
               <div className="pt-4 border-t border-gray-200">
                   <Button onClick={handleSave} className="w-full mb-3" size="lg">Salvar Tudo</Button>
                   <button 
-                    onClick={() => signOut()}
+                    onClick={handleLogout}
                     className="flex items-center justify-center gap-2 w-full text-red-600 hover:bg-red-50 p-3 rounded-xl text-sm font-medium transition-colors"
                   >
                       <LogOut size={16} />

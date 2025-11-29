@@ -1,11 +1,11 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { pb } from '../lib/pocketbase';
 import { Tenant, SupportTicket } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 
 export const useSuperAdmin = () => {
-  const { tenant } = useAuth(); // Tenant do usuário logado (para verificar se é super admin)
+  const { tenant } = useAuth();
   
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
@@ -23,42 +23,45 @@ export const useSuperAdmin = () => {
     const init = async () => {
         // Security Check
         if (!tenant?.isSuperAdmin) {
-            // Em produção real, você pode verificar isso aqui ou no componente de rota
+            // ...
         }
 
         setLoading(true);
         try {
-            // 1. Fetch ALL Tenants (Requer RLS permissiva para super admin ou service_role,
-            // mas aqui assumimos que o usuário logado tem a flag is_super_admin e RLS ajustada ou uso de função RPC)
-            const { data: allTenants } = await supabase.from('tenants').select('*');
-            if (allTenants) {
-                setTenants(allTenants.map((t: any) => ({
-                    id: t.id,
-                    name: t.name,
-                    slug: t.slug,
-                    primaryColor: t.primary_color,
-                    whatsappNumber: t.whatsapp_number,
-                    plan: t.plan,
-                    ownerEmail: t.email, // Supondo que adicionamos email na tabela tenants
-                    subscriptionStatus: t.subscription_status,
-                    joinedAt: t.created_at
-                })));
-            }
+            // 1. Fetch ALL Tenants
+            const allTenants = await pb.collection('tenants').getFullList({
+                sort: '-created'
+            });
+            
+            setTenants(allTenants.map((t: any) => ({
+                id: t.id,
+                name: t.name,
+                slug: t.slug,
+                primaryColor: t.primary_color,
+                whatsappNumber: t.whatsapp_number,
+                plan: t.plan,
+                ownerEmail: '', // Need to fetch user email or expand
+                subscriptionStatus: t.subscription_status,
+                joinedAt: t.created,
+                isSuperAdmin: false
+            })));
 
             // 2. Fetch Tickets (Global)
-            const { data: allTickets } = await supabase.from('support_tickets').select('*');
-            if (allTickets) {
-                setTickets(allTickets.map((t: any) => ({
-                    id: t.id,
-                    tenantId: t.tenant_id,
-                    tenantName: 'Lojista', // Join seria ideal aqui
-                    subject: t.subject,
-                    status: t.status,
-                    priority: t.priority,
-                    createdAt: new Date(t.created_at).toLocaleDateString(),
-                    lastUpdate: new Date(t.updated_at).toLocaleDateString()
-                })));
-            }
+            const allTickets = await pb.collection('support_tickets').getFullList({
+                sort: '-created',
+                expand: 'tenant'
+            });
+
+            setTickets(allTickets.map((t: any) => ({
+                id: t.id,
+                tenantId: t.tenant,
+                tenantName: t.expand?.tenant?.name || 'Lojista', 
+                subject: t.subject,
+                status: t.status,
+                priority: t.priority,
+                createdAt: new Date(t.created).toLocaleDateString(),
+                lastUpdate: new Date(t.updated).toLocaleDateString()
+            })));
         } catch (e) {
             console.error(e);
         } finally {
@@ -75,10 +78,11 @@ export const useSuperAdmin = () => {
     
     const newStatus = current.subscriptionStatus === 'active' ? 'suspended' : 'active';
     
-    const { error } = await supabase.from('tenants').update({ subscription_status: newStatus }).eq('id', tenantId);
-    
-    if (!error) {
+    try {
+        await pb.collection('tenants').update(tenantId, { subscription_status: newStatus });
         setTenants(prev => prev.map(t => t.id === tenantId ? { ...t, subscriptionStatus: newStatus } : t));
+    } catch (e) {
+        console.error("Error updating status", e);
     }
   };
 
@@ -87,8 +91,10 @@ export const useSuperAdmin = () => {
   };
 
   const resolveTicket = async (ticketId: string) => {
-      await supabase.from('support_tickets').update({ status: 'closed' }).eq('id', ticketId);
-      setTickets(prev => prev.map(t => t.id === ticketId ? { ...t, status: 'closed' } : t));
+      try {
+        await pb.collection('support_tickets').update(ticketId, { status: 'closed' });
+        setTickets(prev => prev.map(t => t.id === ticketId ? { ...t, status: 'closed' } : t));
+      } catch(e) { console.error(e); }
   };
   
   const replyTicket = (ticketId: string, message: string) => {

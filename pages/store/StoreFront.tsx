@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Product, CartItem } from '../../types';
-import { Button, Card, QuantitySelector, showToast, ToastContainer, Input, Select, Textarea, Drawer } from '../../components/ui/Components';
+import { Button, Card, QuantitySelector, showToast, Input, Select, Textarea, Drawer } from '../../components/ui/Components';
 import { Search, ShoppingBag, ChevronLeft, MapPin, CreditCard, User, ArrowRight, Loader, DollarSign } from 'lucide-react';
 import { useTenant } from '../../hooks/useTenant';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -438,13 +438,12 @@ const StoreFront: React.FC<StoreFrontProps> = ({ subdomain }) => {
       {view === 'checkout' && renderCheckoutView()}
       {cartCount > 0 && view === 'home' && (
           <div className="fixed bottom-4 left-4 right-4 z-40 max-w-5xl mx-auto">
-              <button onClick={() => navigateTo('cart')} className="w-full bg-[var(--primary-color)] text-white h-12 px-6 rounded-2xl shadow-xl flex items-center justify-between animate-slide-up">
+              <button onClick={() => navigateTo('cart')} className="w-full bg-[var(--primary-color)] text-white h-12 px-6 rounded-2xl shadow-xl flex items-center justify-center animate-slide-up">
                   <div className="flex items-center gap-3"><div className="bg-white/20 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">{cartCount}</div><span className="font-semibold text-sm">Ver Sacola</span></div>
-                  <span className="font-bold text-sm">R$ {cartTotal.toFixed(2)}</span>
+                  <span className="font-bold text-sm ml-auto">R$ {cartTotal.toFixed(2)}</span>
               </button>
           </div>
       )}
-      <ToastContainer />
     </div>
   );
 };

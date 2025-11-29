@@ -1,28 +1,33 @@
+
 import React from 'react';
 import { Card, Button } from '../../components/ui/Components';
 import { useAuth } from '../../contexts/AuthContext';
+import { usePlanLimitations } from '../../hooks/usePlanLimitations';
 import { Lock, TrendingUp, Calendar, Users, ShoppingBag } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const Reports: React.FC = () => {
   const { tenant } = useAuth();
-  const isPro = tenant?.plan === 'pro';
+  const { canViewReports } = usePlanLimitations();
+  const navigate = useNavigate();
 
   if (!tenant) return null;
 
-  if (!isPro) {
+  if (!canViewReports) {
       return (
           <div className="h-[60vh] flex items-center justify-center animate-fade-in">
-              <div className="text-center max-w-md p-8">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                      <Lock className="text-gray-400" size={32} />
+              <div className="text-center max-w-md p-8 bg-white rounded-2xl shadow-lg border border-gray-100">
+                  <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <Lock className="text-indigo-600" size={32} />
                   </div>
                   <h2 className="text-2xl font-bold text-gray-900 mb-2">Recurso Exclusivo Pro</h2>
-                  <p className="text-gray-500 mb-8">
-                      Desbloqueie relatórios detalhados, métricas de crescimento e análise de vendas com o plano Ilimitado.
+                  <p className="text-gray-500 mb-8 leading-relaxed">
+                      Desbloqueie relatórios detalhados, métricas de crescimento, análise de vendas e exportação de dados com o plano Ilimitado.
                   </p>
-                  <Button size="lg" className="w-full">
+                  <Button size="lg" className="w-full" onClick={() => navigate('/admin/settings')}>
                       Fazer Upgrade Agora
                   </Button>
+                  <p className="text-xs text-gray-400 mt-4">Apenas R$ 49,90/mês</p>
               </div>
           </div>
       );
@@ -88,7 +93,34 @@ const Reports: React.FC = () => {
           </Card>
       </div>
       
-      {/* ... Graphs (Same as before) ... */}
+      {/* Placeholder for Graphs */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card className="p-6 border border-gray-200">
+              <h3 className="font-bold text-gray-900 mb-4">Vendas por Período</h3>
+              <div className="h-64 flex items-center justify-center bg-gray-50 rounded-xl text-gray-400 text-sm">
+                  Gráfico de Linha (Placeholder)
+              </div>
+          </Card>
+          <Card className="p-6 border border-gray-200">
+              <h3 className="font-bold text-gray-900 mb-4">Top Produtos</h3>
+              <div className="space-y-4">
+                  {topProducts.map((product, i) => (
+                      <div key={i}>
+                          <div className="flex justify-between text-sm mb-1">
+                              <span className="font-medium text-gray-700">{product.name}</span>
+                              <span className="text-gray-500">{product.sales} vendas</span>
+                          </div>
+                          <div className="w-full bg-gray-100 rounded-full h-2">
+                              <div 
+                                className="bg-indigo-600 h-2 rounded-full" 
+                                style={{ width: `${product.percentage}%` }}
+                              ></div>
+                          </div>
+                      </div>
+                  ))}
+              </div>
+          </Card>
+      </div>
     </div>
   );
 };

@@ -1,14 +1,36 @@
 
 import { DashboardMetric, ChatSession, Tenant } from './types';
 
-// Instrução padrão para IA (mantida pois é uma constante de configuração)
+// --- PLAN LIMITS CONFIGURATION ---
+export const PLAN_LIMITS = {
+    basic: {
+        label: 'Plano Inicial',
+        maxProducts: 15,
+        maxImagesPerProduct: 1,
+        allowCustomDomain: false,
+        allowAdvancedReports: false,
+        allowStaffAccounts: false,
+        transactionFee: 0.0,
+    },
+    pro: {
+        label: 'Plano Pro',
+        maxProducts: Infinity, // Ilimitado
+        maxImagesPerProduct: 5,
+        allowCustomDomain: true,
+        allowAdvancedReports: true,
+        allowStaffAccounts: true,
+        transactionFee: 0.0,
+    }
+};
+
+// Instrução padrão para IA
 export const DEFAULT_BOT_INSTRUCTION = `Você é um assistente virtual inteligente e prestativo para uma loja online ou clínica.
 Seu objetivo é ajudar os clientes a encontrar produtos, tirar dúvidas sobre serviços, agendar horários ou realizar compras.
 Seja sempre educado, direto e use emojis ocasionalmente para manter a conversa leve.
 Se não souber uma resposta, ofereça transferir para um atendente humano.
 Preços e condições de pagamento devem ser informados claramente quando solicitados.`;
 
-// Métricas iniciais vazias (placeholder visual enquanto carrega)
+// Métricas iniciais vazias
 export const EMPTY_METRICS: DashboardMetric[] = [
   { label: 'Faturamento Hoje', value: 'R$ 0,00', trend: '0%', positive: true },
   { label: 'Pedidos Pendentes', value: '0', trend: '0', positive: true },

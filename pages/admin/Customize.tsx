@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, Input, Button, showToast, Textarea, Badge } from '../../components/ui/Components';
-import { Upload, MapPin, Instagram, Phone, Clock, Type, Copy, ExternalLink, MessageCircle, Image, Globe, Check } from 'lucide-react';
+import { Upload, MapPin, Instagram, Phone, Clock, Type, Copy, ExternalLink, MessageCircle, Image, Globe, Check, Lock } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAdmin } from '../../hooks/useAdmin';
+import { usePlanLimitations } from '../../hooks/usePlanLimitations';
 
 const PRESET_COLORS = [
     '#4B0082', // Indigo Profundo (Padrão)
@@ -19,6 +20,7 @@ const PRESET_COLORS = [
 const Customize: React.FC = () => {
   const { tenant, refreshTenant } = useAuth();
   const { updateTenantSettings } = useAdmin();
+  const { canUseCustomDomain, isPro } = usePlanLimitations();
   const [loading, setLoading] = useState(false);
 
   // Local State initialized with Tenant Data
@@ -53,6 +55,34 @@ const Customize: React.FC = () => {
   const fullUrl = `https://${slug}.${baseUrl}`;
 
   const handleSave = async () => {
+    
+    // Validação básica de slug
+    if (slug.length < 3) {
+        showToast('O link da loja precisa ter pelo menos 3 caracteres.', 'error');
+        return;
+    }
+
+    // Validar alteração de slug (Regra de 15 dias)
+    if (tenant?.slugHistory && tenant.slug !== slug) {
+        const history = tenant.slugHistory;
+        const now = new Date();
+        const fifteenDaysAgo = new Date(now.setDate(now.getDate() - 15));
+        
+        const recentChanges = history.filter(entry => new Date(entry.date) > fifteenDaysAgo);
+        if (recentChanges.length >= 2) {
+            showToast('Você atingiu o limite de alterações de link (2x em 15 dias).', 'error');
+            setSlug(tenant.slug); // Reverte
+            return;
+        }
+    }
+
+    // Validar Domínio Próprio (Front-end Guard)
+    if (customDomain && !canUseCustomDomain) {
+        showToast('Domínio próprio é exclusivo do Plano Pro.', 'error');
+        setCustomDomain(''); // Limpa o campo
+        return;
+    }
+
     setLoading(true);
     try {
         const { error } = await updateTenantSettings({
@@ -65,7 +95,7 @@ const Customize: React.FC = () => {
             instagram,
             address,
             openingHours,
-            customDomain
+            customDomain: canUseCustomDomain ? customDomain : null
         });
 
         if (error) throw error;
@@ -76,7 +106,7 @@ const Customize: React.FC = () => {
         // Update CSS Variable for preview
         document.documentElement.style.setProperty('--primary-color', primaryColor);
     } catch (e) {
-        showToast('Erro ao salvar alterações.', 'error');
+        showToast('Erro ao salvar alterações. Verifique os dados.', 'error');
     } finally {
         setLoading(false);
     }
@@ -103,6 +133,14 @@ const Customize: React.FC = () => {
         </div>
         <Button onClick={handleSave} isLoading={loading}>Salvar Alterações</Button>
       </div>
+
+      {/* Alert for Slug Changes */}
+      {tenant.slugHistory && tenant.slugHistory.length > 0 && (
+          <div className="bg-blue-50 border border-blue-100 p-3 rounded-lg text-xs text-blue-800 flex gap-2 items-center">
+              <Clock size={14} />
+              <span>Você alterou seu link recentemente. Mudanças frequentes podem confundir seus clientes.</span>
+          </div>
+      )}
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">
         
@@ -147,21 +185,20 @@ const Customize: React.FC = () => {
                     </div>
 
                     {/* Domínio Personalizado */}
-                    <div className="pt-4 border-t border-gray-100">
-                        <div className="flex justify-between items-center mb-2">
-                            <label className="block text-sm font-medium text-gray-700">Domínio Personalizado (www)</label>
-                            {tenant.plan === 'basic' && <Badge variant="warning">Recurso PRO</Badge>}
+                    {isPro && (
+                        <div className="space-y-2 pt-4 border-t border-gray-100">
+                            <label className="block text-sm font-medium text-gray-700">Seu Domínio (Pro)</label>
+                            <div className="flex gap-2">
+                                <Input 
+                                    placeholder="www.suamarca.com.br"
+                                    value={customDomain}
+                                    onChange={e => setCustomDomain(e.target.value.toLowerCase())}
+                                    icon={<Globe size={16} className="text-gray-400" />}
+                                />
+                            </div>
+                            <p className="text-xs text-gray-500">Configure o CNAME <code>www</code> apontando para <code>katalogo.digital</code></p>
                         </div>
-                        <div className="relative">
-                            <Input 
-                                placeholder="www.suamarca.com.br"
-                                value={customDomain}
-                                onChange={e => setCustomDomain(e.target.value)}
-                                disabled={tenant.plan === 'basic'}
-                                icon={<Globe size={16} className="text-gray-400"/>}
-                            />
-                        </div>
-                    </div>
+                    )}
                 </Card>
             </section>
 
@@ -257,6 +294,7 @@ const Customize: React.FC = () => {
                                         onChange={e => setPrimaryColor(e.target.value)}
                                         className="text-sm font-mono font-medium text-gray-900 bg-white border border-gray-200 rounded-lg px-3 py-2 w-28 uppercase focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900/10"
                                         maxLength={7}
+                                        style={{ color: '#111827' }}
                                      />
                                 </div>
                             </div>

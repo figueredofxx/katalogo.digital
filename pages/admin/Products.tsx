@@ -4,11 +4,14 @@ import { Card, Button, Input, Select, Badge, showToast, Drawer, Textarea, ImageU
 import { Product } from '../../types';
 import { useAdmin } from '../../hooks/useAdmin';
 import { useAuth } from '../../contexts/AuthContext';
-import { Plus, Search, Edit2, Trash2, Image as ImageIcon, Check, X, AlertCircle, Loader, AlertTriangle } from 'lucide-react';
+import { usePlanLimitations } from '../../hooks/usePlanLimitations';
+import { Plus, Search, Edit2, Trash2, Image as ImageIcon, AlertCircle, Loader, AlertTriangle, Lock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const Products: React.FC = () => {
+  const navigate = useNavigate();
   const { products, categories, brands, saveProduct, deleteProduct, loading } = useAdmin();
-  const { tenant } = useAuth();
+  const { canAddProduct, limits, isPro } = usePlanLimitations();
   
   // State
   const [searchTerm, setSearchTerm] = useState('');
@@ -19,18 +22,15 @@ const Products: React.FC = () => {
   const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Plan Limits
-  const PLAN_LIMIT = 20;
-  const isBasicPlan = tenant?.plan === 'basic';
+  // Plan Limits Check
   const productsCount = products.length;
-  const limitReached = isBasicPlan && productsCount >= PLAN_LIMIT;
+  const limitReached = !canAddProduct(productsCount);
 
   // --- ACTIONS ---
 
   const handleOpenDrawer = (product?: Product) => {
     if (!product && limitReached) {
-        showToast('Limite de produtos atingido no plano básico.', 'error');
-        return;
+        return; // Should be disabled anyway
     }
 
     if (product) {
@@ -98,20 +98,32 @@ const Products: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Produtos</h1>
           <p className="text-gray-500 text-sm">Gerencie seu catálogo, preços e estoque.</p>
         </div>
-        <Button onClick={() => handleOpenDrawer()} disabled={limitReached} className={limitReached ? 'opacity-50' : ''}>
-            <Plus size={18} className="mr-2" />
-            Novo Produto
+        <Button onClick={() => handleOpenDrawer()} disabled={limitReached} className={limitReached ? 'opacity-50 cursor-not-allowed' : ''}>
+            {limitReached ? <Lock size={18} className="mr-2" /> : <Plus size={18} className="mr-2" />}
+            {limitReached ? 'Limite Atingido' : 'Novo Produto'}
         </Button>
       </div>
       
       {/* Plan Usage Warning */}
-      {isBasicPlan && (
-          <div className={`p-3 rounded-lg border flex justify-between items-center ${limitReached ? 'bg-red-50 border-red-200 text-red-700' : 'bg-gray-50 border-gray-200 text-gray-600'}`}>
-              <div className="flex items-center gap-2 text-sm font-medium">
-                 <AlertCircle size={16} />
-                 <span>Uso do Plano: {productsCount} / {PLAN_LIMIT} produtos</span>
+      {!isPro && (
+          <div className={`p-4 rounded-xl border flex flex-col sm:flex-row justify-between items-center gap-4 ${limitReached ? 'bg-red-50 border-red-200 text-red-800' : 'bg-blue-50 border-blue-200 text-blue-800'}`}>
+              <div className="flex items-center gap-3">
+                 <div className={`p-2 rounded-lg ${limitReached ? 'bg-red-100' : 'bg-blue-100'}`}>
+                    <AlertCircle size={20} />
+                 </div>
+                 <div>
+                     <p className="font-bold text-sm">Plano Inicial: {productsCount} de {limits.maxProducts} produtos utilizados</p>
+                     {limitReached && <p className="text-xs mt-1 opacity-80">Você atingiu o limite do seu plano gratuito.</p>}
+                 </div>
               </div>
-              {limitReached && <span className="text-xs font-bold underline cursor-pointer">Fazer Upgrade</span>}
+              <Button 
+                variant={limitReached ? 'primary' : 'outline'} 
+                size="sm"
+                className={limitReached ? 'bg-red-600 hover:bg-red-700 border-transparent text-white' : 'border-blue-300 text-blue-700 hover:bg-blue-100'}
+                onClick={() => navigate('/admin/settings')}
+              >
+                  Fazer Upgrade Ilimitado
+              </Button>
           </div>
       )}
 

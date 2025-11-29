@@ -2,7 +2,6 @@
 import React, { useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Users, LifeBuoy, LogOut, Settings, Command, PieChart } from 'lucide-react';
-import { ToastContainer } from './ui/Components';
 import { useAuth } from '../contexts/AuthContext';
 
 interface LayoutProps {
@@ -60,11 +59,7 @@ const SuperLayout: React.FC<LayoutProps> = ({ children }) => {
               <NavLink
                 key={item.path}
                 to={item.path}
-                className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                  isActive
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-900/20'
-                    : 'text-indigo-200 hover:text-white hover:bg-indigo-900/50'
-                }`}
+                className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all hover:text-white hover:bg-indigo-900/50 ${isActive ? 'bg-indigo-600 text-white shadow-md shadow-indigo-900/20' : 'text-indigo-200'}`}
               >
                 <item.icon size={18} />
                 {item.label}
@@ -108,8 +103,6 @@ const SuperLayout: React.FC<LayoutProps> = ({ children }) => {
           {children}
         </div>
       </main>
-      
-      <ToastContainer />
     </div>
   );
 };

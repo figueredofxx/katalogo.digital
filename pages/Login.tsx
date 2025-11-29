@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Input, Button, Card, showToast, Logo } from '../components/ui/Components';
-import { supabase } from '../lib/supabase';
+import { pb } from '../lib/pocketbase';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -15,17 +15,17 @@ const Login: React.FC = () => {
     setLoading(true);
     
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) throw error;
-
-      showToast('Login realizado com sucesso!', 'success');
-      navigate('/admin/dashboard');
+      const authData = await pb.collection('users').authWithPassword(email, password);
+      
+      if (authData.token) {
+          showToast('Login realizado com sucesso!', 'success');
+          // Small delay for better UX
+          setTimeout(() => {
+              navigate('/admin/dashboard');
+          }, 200);
+      }
     } catch (error: any) {
-      showToast(error.message || 'Erro ao fazer login', 'error');
+      showToast('Email ou senha incorretos.', 'error');
     } finally {
       setLoading(false);
     }
@@ -71,7 +71,7 @@ const Login: React.FC = () => {
             </div>
 
             <Button type="submit" className="w-full bg-[#4B0082] hover:bg-indigo-900" size="lg" isLoading={loading}>
-                Entrar na Plataforma
+                {loading ? 'Entrando...' : 'Entrar na Plataforma'}
             </Button>
         </form>
 
@@ -79,10 +79,6 @@ const Login: React.FC = () => {
             Não tem uma conta? <span onClick={() => navigate('/register')} className="text-[#4B0082] font-medium hover:underline cursor-pointer">Criar loja grátis</span>
         </div>
       </Card>
-      
-      <div className="fixed bottom-6 text-xs text-gray-400">
-        &copy; 2025 Katalogo App
-      </div>
     </div>
   );
 };

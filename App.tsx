@@ -29,7 +29,7 @@ import OrderTracking from './pages/store/OrderTracking';
 import CustomerArea from './pages/store/CustomerArea';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
-import { SupabaseWarning } from './components/ui/Components';
+import { SupabaseWarning, ToastContainer } from './components/ui/Components';
 
 // Função aprimorada para detectar o modo do app baseado no domínio
 const getAppMode = (): 'admin' | 'store' | 'super-admin' => {
@@ -55,7 +55,7 @@ const getAppMode = (): 'admin' | 'store' | 'super-admin' => {
 
 const AdminRouteWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { user, loading } = useAuth();
-    if (loading) return <div className="h-screen flex items-center justify-center">Carregando...</div>;
+    if (loading) return <div className="h-screen flex items-center justify-center text-gray-500 text-sm">Carregando aplicação...</div>;
     if (!user) return <Navigate to="/login" replace />;
     return <>{children}</>;
 };
@@ -86,10 +86,10 @@ const StoreWrapper = () => {
 
     return (
         <Routes>
-            <Route index element={<StoreFront subdomain={identifier} />} />
-            <Route path="track/:orderId" element={<OrderTracking />} />
-            <Route path="account" element={<CustomerArea />} />
-            <Route path="*" element={<Navigate to="" />} />
+            <Route path="/" element={<StoreFront subdomain={identifier} />} />
+            <Route path="/track/:orderId" element={<OrderTracking />} />
+            <Route path="/account" element={<CustomerArea />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
     );
 }
@@ -99,56 +99,55 @@ const AdminRoutes = () => {
     <AuthProvider>
       <NotificationProvider>
         <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/checkout-plan" element={<PlanCheckout />} />
-        <Route path="/onboarding" element={<AdminRouteWrapper><Onboarding /></AdminRouteWrapper>} />
-        
-        {/* Tenant Admin */}
-        <Route path="/admin/*" element={
-            <AdminRouteWrapper>
-                <AdminLayout>
-                    <Routes>
-                        <Route path="dashboard" element={<Dashboard />} />
-                        <Route path="orders" element={<Orders />} />
-                        <Route path="customize" element={<Customize />} />
-                        <Route path="products" element={<Products />} />
-                        <Route path="categories" element={<Categories />} />
-                        <Route path="brands" element={<Brands />} />
-                        <Route path="reports" element={<Reports />} />
-                        <Route path="support" element={<TenantSupport />} />
-                        <Route path="settings" element={<Settings />} />
-                        <Route path="*" element={<Navigate to="dashboard" />} />
-                    </Routes>
-                </AdminLayout>
-            </AdminRouteWrapper>
-        } />
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/checkout-plan" element={<PlanCheckout />} />
+            <Route path="/onboarding" element={<AdminRouteWrapper><Onboarding /></AdminRouteWrapper>} />
+            
+            {/* Tenant Admin */}
+            <Route path="/admin/*" element={
+                <AdminRouteWrapper>
+                    <AdminLayout>
+                        <Routes>
+                            <Route path="dashboard" element={<Dashboard />} />
+                            <Route path="orders" element={<Orders />} />
+                            <Route path="customize" element={<Customize />} />
+                            <Route path="products" element={<Products />} />
+                            <Route path="categories" element={<Categories />} />
+                            <Route path="brands" element={<Brands />} />
+                            <Route path="reports" element={<Reports />} />
+                            <Route path="support" element={<TenantSupport />} />
+                            <Route path="settings" element={<Settings />} />
+                            <Route path="*" element={<Navigate to="dashboard" replace />} />
+                        </Routes>
+                    </AdminLayout>
+                </AdminRouteWrapper>
+            } />
 
-        {/* Super Admin */}
-        <Route path="/super-admin/*" element={
-            <AdminRouteWrapper>
-                <SuperLayout>
-                    <Routes>
-                        <Route path="dashboard" element={<SuperDashboard />} />
-                        <Route path="tenants" element={<Tenants />} />
-                        <Route path="support" element={<Support />} />
-                        <Route path="finance" element={<Finance />} />
-                        <Route path="settings" element={<SaaSSettings />} />
-                        <Route path="*" element={<div className="p-8">Em construção...</div>} />
-                    </Routes>
-                </SuperLayout>
-            </AdminRouteWrapper>
-        } />
-        
-        {/* Store Public Routes (Accessible via path even on admin domain for testing) */}
-        <Route path="/store/:slug/*" element={<StoreWrapper />} />
-        
-        {/* Direct Tracking Link */}
-        <Route path="/track/:orderId" element={<OrderTracking />} />
-
+            {/* Super Admin */}
+            <Route path="/super-admin/*" element={
+                <AdminRouteWrapper>
+                    <SuperLayout>
+                        <Routes>
+                            <Route path="dashboard" element={<SuperDashboard />} />
+                            <Route path="tenants" element={<Tenants />} />
+                            <Route path="support" element={<Support />} />
+                            <Route path="finance" element={<Finance />} />
+                            <Route path="settings" element={<SaaSSettings />} />
+                            <Route path="*" element={<div className="p-8">Em construção...</div>} />
+                        </Routes>
+                    </SuperLayout>
+                </AdminRouteWrapper>
+            } />
+            
+            {/* Store Public Routes (Accessible via path even on admin domain for testing) */}
+            <Route path="/store/:slug/*" element={<StoreWrapper />} />
+            
+            {/* Direct Tracking Link */}
+            <Route path="/track/:orderId" element={<OrderTracking />} />
         </Routes>
       </NotificationProvider>
     </AuthProvider>
@@ -170,7 +169,14 @@ export default function App() {
   return (
     <HashRouter>
       <SupabaseWarning />
-      {mode === 'store' ? <StoreWrapper /> : <AdminRoutes />}
+      {/* Toast Container Global - Ensure feedbacks persist across routes */}
+      <ToastContainer />
+      
+      {mode === 'store' ? (
+          <Routes>
+              <Route path="/*" element={<StoreWrapper />} />
+          </Routes>
+      ) : <AdminRoutes />}
     </HashRouter>
   );
 }
