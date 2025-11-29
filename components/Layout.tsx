@@ -26,7 +26,7 @@ const AdminLayout: React.FC<LayoutProps> = ({ children }) => {
     }, 500);
   };
 
-  // --- TRIAL LOGIC ---
+  // --- TRIAL LOGIC (7 DAYS FREE) ---
   let trialDaysLeft = 0;
   let isTrialExpired = false;
 
@@ -35,32 +35,36 @@ const AdminLayout: React.FC<LayoutProps> = ({ children }) => {
       const now = new Date().getTime();
       const diff = end - now;
       trialDaysLeft = Math.ceil(diff / (1000 * 60 * 60 * 24));
-      if (trialDaysLeft <= 0) isTrialExpired = true;
+      
+      if (trialDaysLeft <= 0) {
+          isTrialExpired = true;
+          trialDaysLeft = 0;
+      }
   }
 
   // --- BLOCK SCREEN IF EXPIRED ---
   if (isTrialExpired) {
       return (
-          <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-              <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center space-y-6">
-                  <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto">
-                      <Lock size={32} className="text-red-600" />
+          <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 z-50 fixed inset-0">
+              <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center space-y-6 animate-fade-in border border-red-100">
+                  <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto shadow-inner">
+                      <Lock size={40} className="text-red-600" />
                   </div>
                   <div>
                       <h2 className="text-2xl font-bold text-gray-900">Período de Teste Expirou</h2>
                       <p className="text-gray-500 mt-2">Sua loja está bloqueada. Para continuar vendendo e acessando o painel, escolha um plano.</p>
                   </div>
-                  <div className="bg-gray-50 p-4 rounded-xl text-left space-y-3">
+                  <div className="bg-gray-50 p-4 rounded-xl text-left space-y-3 border border-gray-100">
                       <div className="flex justify-between font-medium">
-                          <span>Plano Pro</span>
-                          <span>R$ 49,90/mês</span>
+                          <span>Plano Pro (Ilimitado)</span>
+                          <span className="font-bold text-gray-900">R$ 49,90/mês</span>
                       </div>
                       <div className="flex justify-between font-medium text-gray-500">
                           <span>Plano Básico</span>
                           <span>R$ 29,90/mês</span>
                       </div>
                   </div>
-                  <Button size="full" onClick={() => window.open('https://wa.me/5511999999999?text=Quero%20assinar%20o%20plano', '_blank')}>
+                  <Button size="full" className="h-12 text-lg shadow-lg shadow-red-200 bg-red-600 hover:bg-red-700 text-white" onClick={() => window.open('https://wa.me/5511999999999?text=Quero%20assinar%20o%20plano', '_blank')}>
                       Assinar Agora
                   </Button>
                   <button onClick={handleLogout} className="text-sm text-gray-400 hover:text-gray-600 underline">
@@ -85,7 +89,6 @@ const AdminLayout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-gray-50/50 flex flex-col md:flex-row font-sans text-gray-900">
-      <SupabaseWarning />
       
       {/* --- DESKTOP SIDEBAR --- */}
       <aside className="hidden md:flex flex-col w-64 bg-white border-r border-gray-200 fixed h-full z-20 shadow-[1px_0_0_0_rgba(0,0,0,0.02)]">
@@ -155,14 +158,21 @@ const AdminLayout: React.FC<LayoutProps> = ({ children }) => {
       {/* --- MAIN CONTENT (BOXED) --- */}
       <main className="flex-1 md:ml-64 min-h-screen pb-24 md:pb-0 bg-gray-50 flex flex-col">
         
-        {/* Trial Banner */}
+        {/* TRIAL WARNING BANNER */}
         {tenant?.subscriptionStatus === 'trial' && trialDaysLeft > 0 && (
-            <div className="bg-indigo-600 text-white px-4 py-2 text-xs font-bold flex justify-between items-center shadow-md z-30 relative">
-                <div className="flex items-center gap-2">
-                    <Clock size={14} />
-                    <span>Seu teste grátis acaba em {trialDaysLeft} dias.</span>
+            <div className="bg-gradient-to-r from-indigo-900 to-indigo-700 text-white px-6 py-2.5 text-xs font-bold flex justify-between items-center shadow-md z-30 relative animate-slide-up">
+                <div className="flex items-center gap-3">
+                    <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+                        <Clock size={14} className="text-white" />
+                    </div>
+                    <span className="tracking-wide">
+                        SEU TESTE GRÁTIS EXPIRA EM <span className="text-yellow-300 text-sm">{trialDaysLeft} DIAS</span>.
+                    </span>
                 </div>
-                <button onClick={() => navigate('/admin/settings#finance')} className="bg-white text-indigo-700 px-2 py-1 rounded hover:bg-indigo-50 transition-colors">
+                <button 
+                    onClick={() => navigate('/admin/settings#finance')} 
+                    className="bg-white text-indigo-900 px-4 py-1.5 rounded-full hover:bg-yellow-300 transition-colors shadow-sm font-extrabold uppercase tracking-wider text-[10px]"
+                >
                     Assinar Agora
                 </button>
             </div>

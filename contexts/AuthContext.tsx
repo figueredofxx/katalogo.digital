@@ -45,6 +45,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
              deliveryConfig: data.config_json?.deliveryConfig,
              openingHours: data.opening_hours,
              subscriptionStatus: data.subscription_status || 'trial',
+             trialEndsAt: data.trial_ends_at, // DATA DO TRIAL
              ownerEmail: user?.email,
              isSuperAdmin: user?.is_super_admin
          };

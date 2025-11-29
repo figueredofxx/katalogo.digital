@@ -18,7 +18,7 @@ export interface Tenant {
   paymentMethods?: PaymentMethods; // Novo: Configuração de pagamentos
   deliveryConfig?: DeliveryConfig; // Novo: Configuração de Frete
   subscriptionStatus?: 'active' | 'past_due' | 'trial' | 'canceled' | 'suspended'; // Novo: Status financeiro
-  trialEndsAt?: string; // Novo: Data de término do teste grátis
+  trialEndsAt?: string; // Novo: Data de término do teste grátis (ISO String)
   nextBillingDate?: string; // Novo: Data de renovação
   ownerEmail?: string; // Novo: Email do dono para gestão
   joinedAt?: string; // Novo: Data de cadastro

@@ -107,6 +107,8 @@ Acesse `http://SEU_IP/api/_/` (após configurar Nginx) e crie:
     *   `whatsapp_number` (text)
     *   `logo` (file)
     *   `banner` (file)
+    *   `subscription_status` (select: trial, active, past_due, suspended) - **IMPORTANTE**
+    *   `trial_ends_at` (date) - **IMPORTANTE: Data do fim do teste**
     *   `config_json` (json) - Para configurações diversas
 3.  **products**
     *   `name` (text)
