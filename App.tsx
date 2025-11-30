@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { HashRouter, Routes, Route, Navigate, useParams, useLocation } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import AdminLayout from './components/Layout';
 import SuperLayout from './components/SuperLayout';
 import Dashboard from './pages/admin/Dashboard';
@@ -31,25 +31,22 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { SupabaseWarning, ToastContainer } from './components/ui/Components';
 
-// Função aprimorada para detectar o modo do app baseado no domínio
-const getAppMode = (): 'admin' | 'store' | 'super-admin' => {
+// --- LÓGICA DE DETECÇÃO DE AMBIENTE ---
+const getAppMode = (): 'landing' | 'app' | 'store' => {
     const hostname = window.location.hostname;
-    
-    // Lista de domínios que são considerados "Admin" ou "Landing Page"
-    const adminDomains = [
-        'katalogo.digital',
-        'www.katalogo.digital',
-        'app.katalogo.digital',
-        'admin.katalogo.digital',
-        'localhost', 
-        '127.0.0.1'
-    ];
 
-    if (adminDomains.includes(hostname)) {
-        return 'admin';
+    // 1. Landing Page (katalogo.digital ou www.katalogo.digital)
+    if (hostname === 'katalogo.digital' || hostname === 'www.katalogo.digital') {
+        return 'landing';
     }
-    
-    // Se não for um domínio admin, assumimos que é uma LOJA (seja subdomínio ou domínio próprio)
+
+    // 2. Sistema / Admin (app.katalogo.digital ou localhost para desenvolvimento do painel)
+    // Nota: Mantemos localhost aqui para facilitar dev, mas em produção o admin é 'app.'
+    if (hostname === 'app.katalogo.digital' || hostname === 'localhost' || hostname === '127.0.0.1') {
+        return 'app';
+    }
+
+    // 3. Loja (Qualquer outro subdomínio ex: lojamaria.katalogo.digital ou domínio próprio)
     return 'store';
 };
 
@@ -60,28 +57,31 @@ const AdminRouteWrapper: React.FC<{ children: React.ReactNode }> = ({ children }
     return <>{children}</>;
 };
 
-// Updated StoreWrapper to correctly handle slug OR custom domain
+// Wrapper para Lojas (Storefront)
 const StoreWrapper = () => {
     const params = useParams<{slug?: string}>();
     const hostname = window.location.hostname;
     
     let identifier = params.slug;
 
+    // Se não houver slug na URL (rota raiz), tentar inferir pelo subdomínio
     if (!identifier) {
-        if (hostname === 'localhost' || hostname === '127.0.0.1') {
-            identifier = 'demo';
-        } else if (hostname.includes('katalogo.digital')) {
+        if (hostname.includes('katalogo.digital')) {
             // É um subdomínio (ex: lojamaria.katalogo.digital)
             const parts = hostname.split('.');
-            if (parts[0] === 'www' && parts.length > 3) {
-                identifier = parts[1];
-            } else if (parts[0] !== 'www') {
+            // Ignora 'app' ou 'www' se por acaso caírem aqui
+            if (parts[0] !== 'app' && parts[0] !== 'www') {
                 identifier = parts[0];
             }
         } else {
-            // É um domínio próprio completo
+            // É um domínio próprio completo (ex: lojamaria.com.br)
             identifier = hostname;
         }
+    }
+
+    // Fallback para dev/demo se não conseguir identificar
+    if (!identifier && (hostname === 'localhost' || hostname === '127.0.0.1')) {
+        identifier = 'demo';
     }
 
     return (
@@ -94,17 +94,23 @@ const StoreWrapper = () => {
     );
 }
 
-const AdminRoutes = () => {
+// Rotas do Sistema Administrativo (app.katalogo.digital)
+const AppRoutes = () => {
   return (
     <AuthProvider>
       <NotificationProvider>
         <Routes>
-            <Route path="/" element={<LandingPage />} />
+            {/* Rotas Públicas de Auth */}
             <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/register" element={<Register />} />
             <Route path="/checkout-plan" element={<PlanCheckout />} />
+            
+            {/* Redireciona a raiz do 'app' para login ou dashboard */}
+            <Route path="/" element={<Navigate to="/login" replace />} />
+
+            {/* Rotas Protegidas */}
             <Route path="/onboarding" element={<AdminRouteWrapper><Onboarding /></AdminRouteWrapper>} />
             
             {/* Tenant Admin */}
@@ -143,10 +149,7 @@ const AdminRoutes = () => {
                 </AdminRouteWrapper>
             } />
             
-            {/* Store Public Routes (Accessible via path even on admin domain for testing) */}
-            <Route path="/store/:slug/*" element={<StoreWrapper />} />
-            
-            {/* Direct Tracking Link */}
+            {/* Rota de Fallback para Links de Rastreio Direto no domínio App */}
             <Route path="/track/:orderId" element={<OrderTracking />} />
         </Routes>
       </NotificationProvider>
@@ -155,28 +158,26 @@ const AdminRoutes = () => {
 };
 
 export default function App() {
-  const [mode, setMode] = useState<'admin' | 'store' | 'super-admin'>(getAppMode());
-
-  // Listen to hash changes (cleaner logic for production routing)
-  useEffect(() => {
-      const handleHashChange = () => {
-          if (window.location.hash.includes('/store')) setMode('admin');
-      };
-      window.addEventListener('hashchange', handleHashChange);
-      return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
+  const [mode, setMode] = useState<'landing' | 'app' | 'store'>(getAppMode());
 
   return (
     <HashRouter>
       <SupabaseWarning />
-      {/* Toast Container Global - Ensure feedbacks persist across routes */}
       <ToastContainer />
       
-      {mode === 'store' ? (
+      {mode === 'landing' && (
+          <Routes>
+              <Route path="*" element={<LandingPage />} />
+          </Routes>
+      )}
+
+      {mode === 'app' && <AppRoutes />}
+
+      {mode === 'store' && (
           <Routes>
               <Route path="/*" element={<StoreWrapper />} />
           </Routes>
-      ) : <AdminRoutes />}
+      )}
     </HashRouter>
   );
 }

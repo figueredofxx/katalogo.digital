@@ -3,10 +3,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, Button, showToast } from '../components/ui/Components';
 import { CheckCircle, ShieldCheck, Rocket, AlertTriangle, Mail } from 'lucide-react';
-import { pb } from '../lib/pocketbase';
+import { api, handleApiError } from '../lib/api';
+import { useAuth } from '../contexts/AuthContext';
 
 const PlanCheckout: React.FC = () => {
   const navigate = useNavigate();
+  const { signIn } = useAuth();
   const [loading, setLoading] = useState(false);
   const [registrationData, setRegistrationData] = useState<any>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -28,73 +30,20 @@ const PlanCheckout: React.FC = () => {
       setErrorMsg(null);
 
       try {
-        console.log("Iniciando ativação (PB) para:", registrationData.email);
-        
-        let userId = '';
-
-        // 1. Criar Usuário no PocketBase
-        try {
-            const user = await pb.collection('users').create({
-                email: registrationData.email,
-                password: registrationData.password,
-                passwordConfirm: registrationData.password, // Requer campo confirm
-                name: registrationData.storeName // Opcional, nome do dono
-            });
-            userId = user.id;
-        } catch (createError: any) {
-            // Se já existe (email duplicado)
-            if (createError.data?.email) {
-                // Tenta logar para ver se a senha bate
-                try {
-                    const authData = await pb.collection('users').authWithPassword(registrationData.email, registrationData.password);
-                    userId = authData.record.id;
-                } catch (loginError) {
-                    throw new Error("Este email já existe e a senha está incorreta.");
-                }
-            } else {
-                throw createError;
-            }
-        }
-
-        // 2. Autenticar para ter permissão de criar Tenant
-        if (!pb.authStore.isValid) {
-            await pb.collection('users').authWithPassword(registrationData.email, registrationData.password);
-        }
-
-        // 3. Verificar se já tem Tenant
-        const existingTenants = await pb.collection('tenants').getList(1, 1, {
-            filter: `owner = "${userId}"`
+        // Envia tudo para o backend Node.js
+        // O backend vai criar User e Tenant numa transação
+        const response = await api.post('/auth/register', {
+            email: registrationData.email,
+            password: registrationData.password,
+            storeName: registrationData.storeName,
+            slug: registrationData.slug,
+            plan: registrationData.plan
         });
 
-        if (existingTenants.total > 0) {
-            showToast('Você já possui uma loja! Redirecionando...', 'success');
-            navigate('/admin/dashboard');
-            return;
-        }
+        const { token, user } = response.data;
+        await signIn(token, user);
 
-        // 4. Criar Tenant com TRIAL de 7 dias
-        const baseSlug = registrationData.slug || registrationData.storeName.toLowerCase().replace(/[^a-z0-9]/g, '-');
-        const uniqueSlug = `${baseSlug}-${Math.floor(Math.random() * 1000)}`;
-
-        // Calcular data de expiração (Hoje + 7 dias)
-        const trialEndDate = new Date();
-        trialEndDate.setDate(trialEndDate.getDate() + 7);
-
-        await pb.collection('tenants').create({
-            name: registrationData.storeName,
-            slug: uniqueSlug,
-            owner: userId,
-            plan: registrationData.plan,
-            primary_color: '#4B0082',
-            subscription_status: 'trial',
-            trial_ends_at: trialEndDate.toISOString(), // Salva data de expiração
-            config_json: {
-                paymentMethods: { pix: true, creditCard: true, money: true },
-                deliveryConfig: { mode: 'fixed', fixedPrice: 0 }
-            }
-        });
-
-        showToast('Loja ativada com 7 dias grátis!', 'success');
+        showToast('Loja ativada com sucesso!', 'success');
         localStorage.removeItem('temp_register_data');
         
         setTimeout(() => {
@@ -102,8 +51,7 @@ const PlanCheckout: React.FC = () => {
         }, 1000);
 
       } catch (error: any) {
-          console.error("Erro Activation:", error);
-          const msg = error.message || 'Erro ao processar.';
+          const { error: msg } = handleApiError(error);
           setErrorMsg(msg);
           showToast(msg, 'error');
       } finally {

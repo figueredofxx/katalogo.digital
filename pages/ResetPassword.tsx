@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Input, Button, Card, showToast } from '../components/ui/Components';
-import { pb } from '../lib/pocketbase';
+import { api, handleApiError } from '../lib/api';
 import { Lock } from 'lucide-react';
 
 const ResetPassword: React.FC = () => {
@@ -24,13 +24,13 @@ const ResetPassword: React.FC = () => {
     setLoading(true);
 
     try {
-      // PB confirmPasswordReset
-      await pb.collection('users').confirmPasswordReset(token, password, passwordConfirm);
+      await api.post('/auth/reset-password', { token, password });
       
       showToast('Senha atualizada com sucesso!', 'success');
       navigate('/login');
     } catch (error: any) {
-      showToast('Erro ao atualizar senha. O link pode ter expirado.', 'error');
+      const { error: msg } = handleApiError(error);
+      showToast(msg, 'error');
     } finally {
       setLoading(false);
     }

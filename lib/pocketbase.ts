@@ -1,12 +1,8 @@
 
-import PocketBase from 'pocketbase';
+// ARQUIVO DEPRECIADO.
+// O sistema foi migrado para MongoDB + Node.js.
+// Use 'lib/api.ts'.
 
-// Detecta URL automaticamente
-// Em produção (mesmo domínio via Nginx): '/'
-// Em desenvolvimento local: 'http://127.0.0.1:8090'
-const pbUrl = window.location.hostname === 'localhost' ? 'http://127.0.0.1:8090' : '/';
-
-export const pb = new PocketBase(pbUrl);
-
-// Desativa cancelamento automático para evitar erros em React StrictMode com useEffect duplo
-pb.autoCancellation(false);
+export const pb = {
+    collection: () => { throw new Error("PocketBase removido. Use API MongoDB."); }
+};

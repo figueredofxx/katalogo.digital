@@ -164,10 +164,10 @@ const Customize: React.FC = () => {
                                     type="text" 
                                     value={slug}
                                     onChange={e => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
-                                    className="flex-1 py-3 bg-transparent border-none focus:ring-0 text-gray-900 font-semibold text-sm placeholder:text-gray-400"
+                                    className="flex-1 py-3 bg-transparent border-none focus:ring-0 text-gray-900 font-semibold text-sm placeholder:text-gray-400 text-right md:text-left"
                                     placeholder="sua-loja"
                                 />
-                                <span className="pr-4 pl-1 text-gray-500 text-sm font-medium bg-gray-50">.{baseUrl}</span>
+                                <span className="pr-4 pl-1 text-gray-500 text-sm font-medium bg-gray-50">.katalogo.digital</span>
                             </div>
                             <div className="flex gap-2">
                                 <Button variant="secondary" onClick={copyToClipboard} title="Copiar Link">

@@ -1,20 +1,40 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Katalogo - Sua Loja no WhatsApp
 
-# Run and deploy your AI Studio app
+Plataforma SaaS para criação de lojas virtuais instantâneas com foco em vendas via WhatsApp.
 
-This contains everything you need to run your app locally.
+## 🚀 Arquitetura
 
-View your app in AI Studio: https://ai.studio/apps/drive/1DTt9KX3EZ0usztt5zPEtqMfYn2CKt5Ga
+O projeto é dividido em duas partes principais:
 
-## Run Locally
+1.  **Frontend (Raiz):** SPA desenvolvido em React, Vite e TailwindCSS.
+2.  **Backend (`/backend`):** API REST em Node.js com Express e MongoDB.
 
-**Prerequisites:**  Node.js
+## 🛠️ Instalação Local
 
+### 1. Backend
+```bash
+cd backend
+npm install
+# Crie um arquivo .env com MONGO_URI e JWT_SECRET
+npm run dev
+```
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+### 2. Frontend
+```bash
+# Na raiz do projeto
+npm install
+npm run dev
+```
+
+## 📦 Deploy em Produção
+
+Siga as instruções detalhadas no arquivo `MONGODB_GUIDE.md` para configurar o servidor Ubuntu 20.04 com Nginx, SSL e MongoDB.
+
+## 📄 Estrutura de Pastas
+
+*   `/src`: Código fonte do React (Páginas, Componentes, Hooks).
+*   `/backend`: Código fonte da API Node.js.
+*   `/scripts`: Scripts utilitários.
+
+---
+© 2025 Katalogo App

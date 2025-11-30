@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from 'react';
-import { pb } from '../lib/pocketbase';
+import { api } from '../lib/api';
 import { Tenant, SupportTicket } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -23,44 +22,39 @@ export const useSuperAdmin = () => {
     const init = async () => {
         // Security Check
         if (!tenant?.isSuperAdmin) {
-            // ...
+            return;
         }
 
         setLoading(true);
         try {
             // 1. Fetch ALL Tenants
-            const allTenants = await pb.collection('tenants').getFullList({
-                sort: '-created'
-            });
+            const { data: allTenants } = await api.get('/super-admin/tenants');
             
             setTenants(allTenants.map((t: any) => ({
-                id: t.id,
+                id: t._id || t.id,
                 name: t.name,
                 slug: t.slug,
                 primaryColor: t.primary_color,
                 whatsappNumber: t.whatsapp_number,
                 plan: t.plan,
-                ownerEmail: '', // Need to fetch user email or expand
+                ownerEmail: t.owner?.email || '',
                 subscriptionStatus: t.subscription_status,
-                joinedAt: t.created,
-                isSuperAdmin: false
+                joinedAt: t.createdAt,
+                isSuperAdmin: t.isSuperAdmin || false
             })));
 
             // 2. Fetch Tickets (Global)
-            const allTickets = await pb.collection('support_tickets').getFullList({
-                sort: '-created',
-                expand: 'tenant'
-            });
+            const { data: allTickets } = await api.get('/super-admin/tickets');
 
             setTickets(allTickets.map((t: any) => ({
-                id: t.id,
-                tenantId: t.tenant,
-                tenantName: t.expand?.tenant?.name || 'Lojista', 
+                id: t._id || t.id,
+                tenantId: t.tenant?._id || t.tenant,
+                tenantName: t.tenant?.name || 'Lojista', 
                 subject: t.subject,
                 status: t.status,
                 priority: t.priority,
-                createdAt: new Date(t.created).toLocaleDateString(),
-                lastUpdate: new Date(t.updated).toLocaleDateString()
+                createdAt: new Date(t.createdAt).toLocaleDateString(),
+                lastUpdate: new Date(t.updatedAt).toLocaleDateString()
             })));
         } catch (e) {
             console.error(e);
@@ -79,7 +73,7 @@ export const useSuperAdmin = () => {
     const newStatus = current.subscriptionStatus === 'active' ? 'suspended' : 'active';
     
     try {
-        await pb.collection('tenants').update(tenantId, { subscription_status: newStatus });
+        await api.patch(`/super-admin/tenants/${tenantId}/status`, { status: newStatus });
         setTenants(prev => prev.map(t => t.id === tenantId ? { ...t, subscriptionStatus: newStatus } : t));
     } catch (e) {
         console.error("Error updating status", e);
@@ -92,7 +86,7 @@ export const useSuperAdmin = () => {
 
   const resolveTicket = async (ticketId: string) => {
       try {
-        await pb.collection('support_tickets').update(ticketId, { status: 'closed' });
+        await api.patch(`/super-admin/tickets/${ticketId}`, { status: 'closed' });
         setTickets(prev => prev.map(t => t.id === ticketId ? { ...t, status: 'closed' } : t));
       } catch(e) { console.error(e); }
   };

@@ -1,12 +1,14 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { pb } from '../lib/pocketbase';
+import { api } from '../lib/api';
 import { Tenant } from '../types';
 
 interface AuthContextType {
   user: any | null;
   tenant: Tenant | null;
+  token: string | null;
   loading: boolean;
+  signIn: (token: string, userData: any) => Promise<void>;
   signOut: () => void;
   refreshTenant: () => Promise<void>;
 }
@@ -14,90 +16,57 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<any | null>(pb.authStore.model);
+  const [user, setUser] = useState<any | null>(null);
   const [tenant, setTenant] = useState<Tenant | null>(null);
+  const [token, setToken] = useState<string | null>(localStorage.getItem('katalogo_token'));
   const [loading, setLoading] = useState(true);
 
-  const fetchTenant = async (userId: string) => {
+  const fetchTenant = async () => {
     try {
-      // Busca o tenant onde 'owner' é igual ao ID do usuário
-      const records = await pb.collection('tenants').getList(1, 1, {
-          filter: `owner = "${userId}"`,
-          expand: 'owner'
-      });
-
-      if (records.items.length > 0) {
-         const data = records.items[0];
-         
-         const mappedTenant: Tenant = {
-             id: data.id,
-             name: data.name,
-             slug: data.slug,
-             primaryColor: data.primary_color || '#4B0082',
-             whatsappNumber: data.whatsapp_number,
-             bannerUrl: data.banner ? pb.files.getUrl(data, data.banner) : '',
-             logoUrl: data.logo ? pb.files.getUrl(data, data.logo) : '',
-             description: data.description,
-             address: data.address,
-             plan: data.plan,
-             // Mapeia campos JSON se existirem
-             paymentMethods: data.config_json?.paymentMethods,
-             deliveryConfig: data.config_json?.deliveryConfig,
-             openingHours: data.opening_hours,
-             subscriptionStatus: data.subscription_status || 'trial',
-             trialEndsAt: data.trial_ends_at, // DATA DO TRIAL
-             ownerEmail: user?.email,
-             isSuperAdmin: user?.is_super_admin
-         };
-         setTenant(mappedTenant);
-      } else {
-         setTenant(null); 
-      }
+      const { data } = await api.get('/tenant/me');
+      setTenant(data);
     } catch (err) {
-      console.error("Erro ao buscar tenant (PB):", err);
+      console.error("Erro ao buscar tenant:", err);
       setTenant(null);
     }
   };
 
-  const refreshTenant = async () => {
-    if (pb.authStore.isValid && pb.authStore.model) {
-        await fetchTenant(pb.authStore.model.id);
-    }
+  const fetchUser = async () => {
+      try {
+          const { data } = await api.get('/auth/me');
+          setUser(data);
+          await fetchTenant();
+      } catch (e) {
+          signOut();
+      } finally {
+          setLoading(false);
+      }
   };
 
   useEffect(() => {
-    // Check initial session
-    if (pb.authStore.isValid && pb.authStore.model) {
-        setUser(pb.authStore.model);
-        fetchTenant(pb.authStore.model.id).finally(() => setLoading(false));
+    if (token) {
+        fetchUser();
     } else {
-        setUser(null);
         setLoading(false);
     }
+  }, [token]);
 
-    // Listen to auth changes
-    const removeListener = pb.authStore.onChange((token, model) => {
-        setUser(model);
-        if (model) {
-            fetchTenant(model.id);
-        } else {
-            setTenant(null);
-        }
-    });
-
-    return () => {
-        removeListener();
-    };
-  }, []);
+  const signIn = async (newToken: string, userData: any) => {
+      localStorage.setItem('katalogo_token', newToken);
+      setToken(newToken);
+      setUser(userData);
+      await fetchTenant();
+  };
 
   const signOut = () => {
-    pb.authStore.clear();
-    setTenant(null);
+    localStorage.removeItem('katalogo_token');
+    setToken(null);
     setUser(null);
+    setTenant(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, tenant, loading, signOut, refreshTenant }}>
+    <AuthContext.Provider value={{ user, tenant, token, loading, signIn, signOut, refreshTenant: fetchTenant }}>
       {children}
     </AuthContext.Provider>
   );

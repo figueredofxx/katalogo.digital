@@ -1,9 +1,8 @@
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { Input, Button, Card, showToast } from '../components/ui/Components';
-import { pb } from '../lib/pocketbase';
-import { Mail, ArrowLeft, CheckCircle } from 'lucide-react';
+import { api, handleApiError } from '../lib/api';
+import { Mail, CheckCircle } from 'lucide-react';
 
 const ForgotPassword: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -15,12 +14,12 @@ const ForgotPassword: React.FC = () => {
     setLoading(true);
 
     try {
-      // PB requestPasswordReset
-      await pb.collection('users').requestPasswordReset(email);
+      await api.post('/auth/forgot-password', { email });
       setSent(true);
       showToast('Email de recuperação enviado!', 'success');
     } catch (error: any) {
-      showToast('Erro ao enviar email. Verifique se o endereço está correto.', 'error');
+      const { error: msg } = handleApiError(error);
+      showToast(msg, 'error');
     } finally {
       setLoading(false);
     }

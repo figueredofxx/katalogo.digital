@@ -1,3 +1,4 @@
+
 # Guia de Instalação e Deploy - Katalogo (PocketBase + React)
 
 Este guia foi desenhado para ser seguido por uma IA ou SysAdmin para configurar um servidor **Ubuntu 20.04** "limpo" do zero.
@@ -23,7 +24,7 @@ apt install -y curl git nginx unzip
 
 ## 2. Instalar Node.js (v18+)
 
-Necessário para fazer o build do Frontend.
+Necessário para rodar o script de setup e fazer o build do Frontend.
 
 ```bash
 curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
@@ -88,46 +89,35 @@ systemctl start pocketbase
 systemctl status pocketbase
 ```
 
-## 4. Configurar Banco de Dados (Collections)
+### 3.2 Criar Conta Admin (Obrigatório)
 
-**Atenção:** Como o PocketBase roda localmente na porta 8090, você precisará configurar o Nginx (Passo 6) primeiro para acessar o painel admin externamente, OU usar um túnel SSH temporário.
+Antes de rodar o script de automação, você precisa criar o primeiro admin.
+Como o PocketBase está na porta 8090 e bloqueado pelo firewall (provavelmente), use este comando SSH local para criar o admin via terminal:
 
-**Estrutura de Collections Necessária:**
+```bash
+cd /var/www/backend
+./pocketbase admin create admin@katalogo.digital 1234567890
+```
+*Anote esse email e senha.*
 
-Acesse `http://SEU_IP/api/_/` (após configurar Nginx) e crie:
+---
 
-1.  **users** (Padrão do sistema)
-    *   Campos padrão: `name`, `email`, `avatar`.
-2.  **tenants** (Lojas)
-    *   `name` (text)
-    *   `slug` (text, unique)
-    *   `owner` (relation -> users)
-    *   `primary_color` (text)
-    *   `plan` (select: basic, pro)
-    *   `whatsapp_number` (text)
-    *   `logo` (file)
-    *   `banner` (file)
-    *   `subscription_status` (select: trial, active, past_due, suspended) - **IMPORTANTE**
-    *   `trial_ends_at` (date) - **IMPORTANTE: Data do fim do teste**
-    *   `config_json` (json) - Para configurações diversas
-3.  **products**
-    *   `name` (text)
-    *   `price` (number)
-    *   `tenant` (relation -> tenants)
-    *   `category` (relation -> categories)
-    *   `image` (file)
-    *   `active` (bool)
-4.  **orders**
-    *   `tenant` (relation -> tenants)
-    *   `total` (number)
-    *   `status` (select: pending, preparing, ready, delivery, delivered, canceled)
-    *   `customer_json` (json) - Dados do cliente
-    *   `items_json` (json) - Snapshot dos itens
-5.  **categories**
-    *   `name` (text)
-    *   `tenant` (relation -> tenants)
+## 4. Configurar Banco de Dados (Automático)
 
-*Dica: Defina as "API Rules" dessas coleções como "Public" (Unlock icon) temporariamente para leitura, e "Admin Only" ou "Owner Only" para escrita, para facilitar o teste inicial.*
+Em vez de criar as tabelas manualmente, usaremos o script de automação incluído no projeto.
+
+1.  Baixe o código do projeto (Passo 5).
+2.  Navegue até a pasta do projeto: `cd /var/www/katalogo`.
+3.  Edite o arquivo `scripts/pb_schema_init.js` para colocar o email e senha que você criou no passo 3.2.
+    `nano scripts/pb_schema_init.js`
+4.  Rode o script:
+    ```bash
+    npm install pocketbase --save # Garanta que o SDK está instalado
+    node scripts/pb_schema_init.js
+    ```
+5.  Se aparecer "✅ Coleção CRIADA", o banco está pronto!
+
+---
 
 ## 5. Deploy do Frontend (React)
 

@@ -2,10 +2,12 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Input, Button, Card, showToast, Logo } from '../components/ui/Components';
-import { pb } from '../lib/pocketbase';
+import { api, handleApiError } from '../lib/api';
+import { useAuth } from '../contexts/AuthContext';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
+  const { signIn } = useAuth();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -15,17 +17,19 @@ const Login: React.FC = () => {
     setLoading(true);
     
     try {
-      const authData = await pb.collection('users').authWithPassword(email, password);
+      const response = await api.post('/auth/login', { email, password });
+      const { token, user } = response.data;
       
-      if (authData.token) {
-          showToast('Login realizado com sucesso!', 'success');
-          // Small delay for better UX
-          setTimeout(() => {
-              navigate('/admin/dashboard');
-          }, 200);
-      }
+      await signIn(token, user);
+      
+      showToast('Login realizado com sucesso!', 'success');
+      setTimeout(() => {
+          navigate('/admin/dashboard');
+      }, 200);
+
     } catch (error: any) {
-      showToast('Email ou senha incorretos.', 'error');
+      const { error: errMsg } = handleApiError(error);
+      showToast(errMsg, 'error');
     } finally {
       setLoading(false);
     }

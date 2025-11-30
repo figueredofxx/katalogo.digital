@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
 import { Button, Badge, Card } from '../components/ui/Components';
-import { Link } from 'react-router-dom';
 import { 
     Check, ShoppingBag, Zap, Shield, ChevronRight, 
     Smartphone, ArrowRight, Star, Clock, CheckCircle2, 
@@ -10,6 +9,9 @@ import {
 
 const LandingPage: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // URL do sistema para login/registro
+  const APP_URL = 'https://app.katalogo.digital';
 
   return (
     <div className="min-h-screen bg-white font-sans text-gray-900 selection:bg-indigo-100 selection:text-indigo-900">
@@ -34,14 +36,14 @@ const LandingPage: React.FC = () => {
 
             {/* CTAs */}
             <div className="hidden md:flex gap-3">
-                <Link to="/login">
+                <a href={`${APP_URL}/#/login`}>
                     <Button variant="ghost" className="text-gray-600 hover:text-[#4B0082] hover:bg-indigo-50">Entrar</Button>
-                </Link>
-                <Link to="/register">
+                </a>
+                <a href={`${APP_URL}/#/register`}>
                     <Button className="bg-[#4B0082] hover:bg-indigo-900 text-white shadow-lg shadow-indigo-200 hover:shadow-indigo-300 transition-all transform hover:-translate-y-0.5">
                         Criar Loja Grátis
                     </Button>
-                </Link>
+                </a>
             </div>
 
             {/* Mobile Menu Button */}
@@ -57,12 +59,12 @@ const LandingPage: React.FC = () => {
                     <a href="#funcionalidades" className="text-gray-600 font-medium" onClick={() => setMobileMenuOpen(false)}>Funcionalidades</a>
                     <a href="#planos" className="text-gray-600 font-medium" onClick={() => setMobileMenuOpen(false)}>Planos</a>
                     <hr className="border-gray-100"/>
-                    <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
+                    <a href={`${APP_URL}/#/login`} onClick={() => setMobileMenuOpen(false)}>
                         <Button variant="ghost" size="full">Entrar</Button>
-                    </Link>
-                    <Link to="/register" onClick={() => setMobileMenuOpen(false)}>
+                    </a>
+                    <a href={`${APP_URL}/#/register`} onClick={() => setMobileMenuOpen(false)}>
                         <Button size="full" className="bg-[#4B0082] text-white">Começar Agora</Button>
-                    </Link>
+                    </a>
                 </div>
             </div>
         )}
@@ -92,12 +94,12 @@ const LandingPage: React.FC = () => {
                   </p>
 
                   <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                      <Link to="/register" className="w-full sm:w-auto">
+                      <a href={`${APP_URL}/#/register`} className="w-full sm:w-auto">
                           <Button size="lg" className="w-full h-14 text-base px-8 bg-[#4B0082] hover:bg-indigo-900 text-white shadow-xl shadow-indigo-200 hover:shadow-indigo-300">
                               Começar Gratuitamente
                               <ArrowRight className="ml-2 w-5 h-5" />
                           </Button>
-                      </Link>
+                      </a>
                       <a href="#como-funciona" className="w-full sm:w-auto">
                         <Button variant="secondary" size="lg" className="w-full h-14 text-base px-8 bg-white border-gray-200 text-gray-700 hover:bg-gray-50">
                              Ver como funciona
@@ -330,11 +332,11 @@ const LandingPage: React.FC = () => {
                       <p className="text-lg text-gray-500 mb-8">
                           Eliminamos toda a complexidade. Você não precisa saber design, programação ou marketing. O Katalogo faz o trabalho pesado.
                       </p>
-                      <Link to="/register">
+                      <a href={`${APP_URL}/#/register`}>
                         <Button size="lg" className="bg-[#4B0082] text-white shadow-xl shadow-indigo-200 h-12 px-8">
                             Criar Loja Agora
                         </Button>
-                      </Link>
+                      </a>
                   </div>
               </div>
           </div>
@@ -374,11 +376,11 @@ const LandingPage: React.FC = () => {
                               <Check size={18} className="text-[#4B0082]" /> Pedidos ilimitados
                           </li>
                       </ul>
-                      <Link to="/register?plan=basic">
+                      <a href={`${APP_URL}/#/register?plan=basic`}>
                           <Button variant="outline" size="full" className="border-gray-600 text-white hover:bg-gray-700 hover:text-white hover:border-gray-500">
                               Escolher Básico
                           </Button>
-                      </Link>
+                      </a>
                   </div>
 
                   {/* Plano Pro (Destaque) */}
@@ -408,11 +410,11 @@ const LandingPage: React.FC = () => {
                               <div className="bg-white/20 p-0.5 rounded-full"><Check size={12} className="text-white" /></div> Suporte Prioritário
                           </li>
                       </ul>
-                      <Link to="/register?plan=pro">
+                      <a href={`${APP_URL}/#/register?plan=pro`}>
                           <Button size="full" className="bg-white text-[#4B0082] hover:bg-gray-100 border-none font-bold h-12 shadow-lg">
                               Testar 7 Dias Grátis
                           </Button>
-                      </Link>
+                      </a>
                       <p className="text-xs text-center text-indigo-300 mt-4 opacity-80">
                           Sem cobrança hoje. Cancele quando quiser.
                       </p>
@@ -457,11 +459,11 @@ const LandingPage: React.FC = () => {
                       <p className="text-lg text-indigo-200 mb-8 max-w-2xl mx-auto">
                           Junte-se a centenas de lojistas que profissionalizaram o atendimento e aumentaram suas vendas com o Katalogo.
                       </p>
-                      <Link to="/register">
+                      <a href={`${APP_URL}/#/register`}>
                           <Button size="lg" className="h-16 px-10 text-lg bg-white text-[#4B0082] hover:bg-gray-100 border-none font-bold shadow-xl transition-transform hover:scale-105">
                               Criar Minha Loja Grátis
                           </Button>
-                      </Link>
+                      </a>
                       <p className="text-sm text-indigo-300 mt-6">
                           Teste grátis de 7 dias &bull; Instalação em segundos &bull; Suporte incluso
                       </p>
